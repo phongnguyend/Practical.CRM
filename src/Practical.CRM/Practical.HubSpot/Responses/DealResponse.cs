@@ -16,6 +16,7 @@ public class DealProperties
     public string CloseDate { get; set; }
     public string Description { get; set; }
     public string DealOwner { get; set; }
+    public string MyCustomProperty { get; set; }
 }
 
 public class DealsListResponse

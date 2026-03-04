@@ -29,7 +29,7 @@ if (deals != null && deals.Length > 0)
 {
     var firstDealId = deals[0].Id;
     await GetDealDetails(httpClient, baseUrl, jsonOptions, firstDealId);
-    
+
     // Update deal
     await UpdateDeal(httpClient, baseUrl, jsonOptions, firstDealId);
 }
@@ -41,22 +41,22 @@ async Task<DealResponse[]> GetDeals(HttpClient client, string baseUrl, JsonSeria
     try
     {
         Console.WriteLine("\n=== Getting List of Deals ===");
-        
-        var response = await client.GetAsync($"{baseUrl}/crm/v3/objects/deals?limit=100");
+
+        var response = await client.GetAsync($"{baseUrl}/crm/v3/objects/deals?limit=100&properties=dealname,dealstage,amount,closedate,description,dealowner,mycustomproperty");
         response.EnsureSuccessStatusCode();
-        
+
         var content = await response.Content.ReadAsStringAsync();
         var dealsListResponse = JsonSerializer.Deserialize<DealsListResponse>(content, options);
-        
+
         if (dealsListResponse?.Results != null)
         {
             Console.WriteLine($"Found {dealsListResponse.Results.Length} deals:");
-            
+
             foreach (var deal in dealsListResponse.Results)
             {
-                Console.WriteLine($"  ID: {deal.Id}, Name: {deal.Properties?.DealName}, Stage: {deal.Properties?.DealStage}");
+                Console.WriteLine($"  ID: {deal.Id}, Name: {deal.Properties?.DealName}, Stage: {deal.Properties?.DealStage}, Custom Property: {deal.Properties?.MyCustomProperty}");
             }
-            
+
             return dealsListResponse.Results;
         }
     }
@@ -64,7 +64,7 @@ async Task<DealResponse[]> GetDeals(HttpClient client, string baseUrl, JsonSeria
     {
         Console.WriteLine($"Error getting deals: {ex.Message}");
     }
-    
+
     return null;
 }
 
@@ -73,14 +73,14 @@ async Task GetDealDetails(HttpClient client, string baseUrl, JsonSerializerOptio
     try
     {
         Console.WriteLine($"\n=== Getting Deal Details for ID: {dealId} ===");
-        
+
         var detailResponse = await client.GetAsync(
-            $"{baseUrl}/crm/v3/objects/deals/{dealId}?properties=dealname,dealstage,amount,closedate,description,dealowner");
+            $"{baseUrl}/crm/v3/objects/deals/{dealId}?properties=dealname,dealstage,amount,closedate,description,dealowner,mycustomproperty");
         detailResponse.EnsureSuccessStatusCode();
-        
+
         var detailContent = await detailResponse.Content.ReadAsStringAsync();
         var deal = JsonSerializer.Deserialize<DealResponse>(detailContent, options);
-        
+
         Console.WriteLine($"Deal ID: {deal.Id}");
         Console.WriteLine($"  Name: {deal.Properties?.DealName}");
         Console.WriteLine($"  Stage: {deal.Properties?.DealStage}");
@@ -88,6 +88,7 @@ async Task GetDealDetails(HttpClient client, string baseUrl, JsonSerializerOptio
         Console.WriteLine($"  Close Date: {deal.Properties?.CloseDate}");
         Console.WriteLine($"  Description: {deal.Properties?.Description}");
         Console.WriteLine($"  Owner: {deal.Properties?.DealOwner}");
+        Console.WriteLine($"  Custom Property: {deal.Properties?.MyCustomProperty}");
         Console.WriteLine($"  Created: {deal.CreatedAt}");
         Console.WriteLine($"  Updated: {deal.UpdatedAt}");
     }
@@ -102,7 +103,7 @@ async Task UpdateDeal(HttpClient client, string baseUrl, JsonSerializerOptions o
     try
     {
         Console.WriteLine($"\n=== Updating Deal ID: {dealId} ===");
-        
+
         var updatePayload = new
         {
             properties = new
@@ -111,16 +112,16 @@ async Task UpdateDeal(HttpClient client, string baseUrl, JsonSerializerOptions o
                 description = "This deal was updated programmatically"
             }
         };
-        
+
         var jsonContent = JsonSerializer.Serialize(updatePayload);
         var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
-        
+
         var updateResponse = await client.PatchAsync($"{baseUrl}/crm/v3/objects/deals/{dealId}", content);
         updateResponse.EnsureSuccessStatusCode();
-        
+
         var updatedContent = await updateResponse.Content.ReadAsStringAsync();
         var updatedDeal = JsonSerializer.Deserialize<DealResponse>(updatedContent, options);
-        
+
         Console.WriteLine($"Deal {updatedDeal.Id} updated successfully");
         Console.WriteLine($"  New Name: {updatedDeal.Properties?.DealName}");
         Console.WriteLine($"  New Description: {updatedDeal.Properties?.Description}");
